@@ -5,6 +5,7 @@ use InvalidArgumentException;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as Config;
 use Symfony\Component\Console\Input\InputOption;
+use Gitlab\Client;
 
 /**
  */
@@ -32,6 +33,10 @@ class GitlabCiCommand extends Command
      */
     protected $config;
 
+    /**
+     *
+     * @var Client
+     */
     private $client;
 
     private $projectId;
@@ -50,7 +55,7 @@ class GitlabCiCommand extends Command
         $url = $this->config->get('gitlab-ci')['url'];
         $token = $this->config->get('gitlab-ci')['token'];
 
-        $this->client = \Gitlab\Client::create($url)->authenticate($token, \Gitlab\Client::AUTH_URL_TOKEN);
+        $this->client = Client::create($url)->authenticate($token, Client::AUTH_URL_TOKEN);
         $this->projectId = $this->config->get('gitlab-ci')['project_id'];
 
         parent::__construct();
@@ -63,7 +68,7 @@ class GitlabCiCommand extends Command
      */
     public function handle()
     {
-        $this->info('Gitlab CI');
+        $this->getOutput()->setDecorated(true);
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
@@ -91,9 +96,10 @@ class GitlabCiCommand extends Command
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
         foreach ($pipelines as $pipeline) {
+            $status = $pipeline['status'];
             $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . ']';
 
-            $this->info($info);
+            $this->output($status, $info);
         }
     }
 
@@ -102,30 +108,36 @@ class GitlabCiCommand extends Command
         $params = [
             'per_page' => 100
         ];
-        $this->getOutput()->setDecorated(true);
 
         $pipelineId = $this->option('pipeline');
 
         $pipelines = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
 
         foreach ($pipelines as $pipeline) {
-            $duration = $pipeline['duration'] ?? '';
+            // $duration = $pipeline['duration'] ?? '';
             $status = $pipeline['status'];
 
             $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['stage'] . '] ' . $pipeline['name'];
             // ' (' . $duration . ')'
 
-            if ($status == 'success') {
-                $this->info($info);
-            } elseif ($status == 'manual' || $status == 'skipped') {
-                $this->line($info);
-            } else {
-                $this->error($info);
-            }
+            $this->output($status, $info);
         }
     }
 
-    protected function getCurrentBranch()
+    private function output($status, $info)
+    {
+        if ($status == 'success') {
+            $this->info($info);
+        } elseif ($status == 'running') {
+            $this->warn($info);
+        } elseif ($status == 'manual' || $status == 'skipped' || $status == 'created') {
+            $this->line($info);
+        } else {
+            $this->error($info);
+        }
+    }
+
+    private function getCurrentBranch()
     {
         if (! is_file('.git/HEAD')) {
             throw new \Exception('No git found. Use --branch option');
