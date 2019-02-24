@@ -72,13 +72,25 @@ class GitlabCiCommand extends Command
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
-        } elseif ($this->hasOption('trace')) {
+        } elseif ($this->option('trace') !== false) {
 
-            if (! $this->option ('job')) {
+            if (! $this->option('job')) {
                 throw new InvalidArgumentException('Missing job option.');
             }
 
             $this->getJobTrace($this->option('job'));
+        } elseif ($this->option('artifacts') !== false) {
+            if (! $this->option('job')) {
+                throw new InvalidArgumentException('Missing job option.');
+            }
+
+            $this->getJobArtifacts($this->option('job'));
+        } elseif ($this->option('retry') !== false) {
+            if (! $this->option('job')) {
+                throw new InvalidArgumentException('Missing job option.');
+            }
+
+            $this->retryJob($this->option('job'));
         } elseif ($this->option('job')) {
             $this->getJob($this->option('job'));
         } else {
@@ -150,6 +162,20 @@ class GitlabCiCommand extends Command
         $this->info($trace);
     }
 
+    protected function getJobArtifacts($jobId)
+    {
+        $artifacts = $this->client->api('jobs')->artifacts($this->projectId, $jobId, []);
+
+        // $this->info($artifacts);
+    }
+
+    protected function retryJob($jobId)
+    {
+        $this->client->api('jobs')->retry($this->projectId, $jobId, []);
+
+        $this->info('Job ' . $jobId . ' has been retried.');
+    }
+
     /**
      * Output based on pipline/job status
      *
@@ -207,14 +233,14 @@ class GitlabCiCommand extends Command
                 'current-branch',
                 'c',
                 InputOption::VALUE_OPTIONAL,
-                'Show pipelines for specific the current git branch',
+                'Show pipelines for the current git branch',
                 false
             ],
             [
                 'pipeline',
                 'p',
                 InputOption::VALUE_OPTIONAL,
-                'Show pipeline. Pipeline id.',
+                'Show pipeline\'s jobs. Pipeline id.',
                 false
             ],
             [
@@ -229,6 +255,18 @@ class GitlabCiCommand extends Command
                 't',
                 InputOption::VALUE_NONE,
                 'Show job trace.'
+            ],
+            [
+                'artifacts',
+                'a',
+                InputOption::VALUE_NONE,
+                'Show job\'s artifacts.'
+            ],
+            [
+                'retry',
+                'r',
+                InputOption::VALUE_NONE,
+                'Retry a job.'
             ]
         ];
     }
