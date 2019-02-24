@@ -30,7 +30,7 @@ class GitlabCiCommand extends Command
     /**
      * Configuration repository.
      *
-     * @var \Illuminate\Contracts\Config\Repository
+     * @var Config
      */
     protected $config;
 
@@ -40,6 +40,10 @@ class GitlabCiCommand extends Command
      */
     private $client;
 
+    /**
+     *
+     * @var integer
+     */
     private $projectId;
 
     /**
@@ -68,7 +72,7 @@ class GitlabCiCommand extends Command
      */
     public function handle()
     {
-        $this->getOutput()->setDecorated(true);
+        // $this->getOutput()->setDecorated(true);
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
@@ -98,6 +102,9 @@ class GitlabCiCommand extends Command
         }
     }
 
+    /**
+     * List recient Pipelines
+     */
     protected function listPipelines()
     {
         $params = [];
@@ -124,6 +131,9 @@ class GitlabCiCommand extends Command
         }
     }
 
+    /**
+     * Get Pipline's Jobs
+     */
     protected function listPipelineJobs()
     {
         $params = [
@@ -143,6 +153,11 @@ class GitlabCiCommand extends Command
         }
     }
 
+    /**
+     * Get a Job
+     *
+     * @param integer $jobId
+     */
     protected function getJob($jobId)
     {
         $job = $this->client->api('jobs')->show($this->projectId, $jobId, []);
@@ -153,8 +168,14 @@ class GitlabCiCommand extends Command
         $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'] . ' (' . $duration . ')';
 
         $this->output($status, $info);
+        $this->line("\n    " . $job['web_url']);
     }
 
+    /**
+     * Get Job's Trace
+     *
+     * @param integer $jobId
+     */
     protected function getJobTrace($jobId)
     {
         $trace = $this->client->api('jobs')->trace($this->projectId, $jobId, []);
@@ -162,6 +183,11 @@ class GitlabCiCommand extends Command
         $this->info($trace);
     }
 
+    /**
+     * Get Job's Artifacts
+     *
+     * @param integer $jobId
+     */
     protected function getJobArtifacts($jobId)
     {
         $artifacts = $this->client->api('jobs')->artifacts($this->projectId, $jobId, []);
@@ -169,6 +195,11 @@ class GitlabCiCommand extends Command
         // $this->info($artifacts);
     }
 
+    /**
+     * Retry a Job
+     *
+     * @param integer $jobId
+     */
     protected function retryJob($jobId)
     {
         $this->client->api('jobs')->retry($this->projectId, $jobId, []);
@@ -186,9 +217,9 @@ class GitlabCiCommand extends Command
     {
         if ($status == 'success') {
             $this->info($info);
-        } elseif ($status == 'running') {
+        } elseif ($status == 'running' || $status == 'pending') {
             $this->warn($info);
-        } elseif ($status == 'manual' || $status == 'skipped' || $status == 'created') {
+        } elseif ($status == 'manual' || $status == 'skipped' || $status == 'created' || $status == 'canceled') {
             $this->line($info);
         } else {
             $this->error($info);
