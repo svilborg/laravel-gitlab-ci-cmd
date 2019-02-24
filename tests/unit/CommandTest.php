@@ -1,15 +1,31 @@
 <?php
 namespace Tests\Unit;
 
-use GitlabCi\ServiceProviders\GitlabCiServiceProvider;
+use Gitlab\Client;
+use Http\Client\HttpClient;
 use Illuminate\Support\Facades\Artisan;
+use GitlabCi\ServiceProviders\GitlabCiServiceProvider;
+
+class ClassConstantStub
+{
+
+    const AUTH_URL_TOKEN = 'url_token';
+}
 
 class CommandTest extends \Orchestra\Testbench\TestCase
 {
 
+    private $mock;
+
     public function setUp()
     {
         parent::setUp();
+
+        $mock = \Mockery::namedMock(Client::class, ClassConstantStub::class);
+        $mock->shouldReceive('create')->andReturnSelf();
+        $mock->shouldReceive('authenticate')->andReturnSelf();
+
+        $this->mock = $mock;
     }
 
     protected function getPackageProviders($app)
@@ -19,21 +35,21 @@ class CommandTest extends \Orchestra\Testbench\TestCase
         ];
     }
 
-    public function testSampleTest()
+    public function testPipelines()
     {
-        $this->mockConsoleOutput = false;
-
-        // $cmd = $this->artisan('gitlab-ci', [
-        // // '--pipeline' => '98575'
-        // '--pipeline' => '98555'
-        // ]);
-
-        $cmd = $this->artisan('gitlab-ci', [
-            // '--pipeline' => '98575'
-            '--pipeline' => '98555'
+        $this->mock->shouldReceive('api')->andReturnSelf();
+        $this->mock->shouldReceive('pipelines')->andReturn([
+            [
+                'id' => 1,
+                'name' => 'test',
+                'status' => 'success',
+                'ref' => 'master'
+            ]
         ]);
 
-        $resultAsText = Artisan::output();
-        echo $resultAsText;
+        $cmd = $this->artisan('gitlab-ci', []);
+
+        $cmd->assertExitCode(0);
+        $cmd->expectsOutput('1 success [master]');
     }
 }
