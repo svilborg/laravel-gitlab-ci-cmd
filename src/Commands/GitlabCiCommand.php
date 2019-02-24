@@ -8,6 +8,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Gitlab\Client;
 
 /**
+ * Gitlab CI
  */
 class GitlabCiCommand extends Command
 {
@@ -49,7 +50,6 @@ class GitlabCiCommand extends Command
      */
     public function __construct(Config $config)
     {
-        // Set configuration repository.
         $this->config = $config;
 
         $url = $this->config->get('gitlab-ci')['url'];
@@ -72,6 +72,15 @@ class GitlabCiCommand extends Command
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
+        } elseif ($this->hasOption('trace')) {
+
+            if (! $this->option ('job')) {
+                throw new InvalidArgumentException('Missing job option.');
+            }
+
+            $this->getJobTrace($this->option('job'));
+        } elseif ($this->option('job')) {
+            $this->getJob($this->option('job'));
         } else {
             $this->listPipelines();
         }
@@ -111,19 +120,42 @@ class GitlabCiCommand extends Command
 
         $pipelineId = $this->option('pipeline');
 
-        $pipelines = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
+        $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
 
-        foreach ($pipelines as $pipeline) {
-            // $duration = $pipeline['duration'] ?? '';
-            $status = $pipeline['status'];
+        foreach ($jobs as $job) {
+            $status = $job['status'];
 
-            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['stage'] . '] ' . $pipeline['name'];
-            // ' (' . $duration . ')'
+            $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'];
 
             $this->output($status, $info);
         }
     }
 
+    protected function getJob($jobId)
+    {
+        $job = $this->client->api('jobs')->show($this->projectId, $jobId, []);
+
+        $duration = $job['duration'] ?? '';
+        $status = $job['status'];
+
+        $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'] . ' (' . $duration . ')';
+
+        $this->output($status, $info);
+    }
+
+    protected function getJobTrace($jobId)
+    {
+        $trace = $this->client->api('jobs')->trace($this->projectId, $jobId, []);
+
+        $this->info($trace);
+    }
+
+    /**
+     * Output based on pipline/job status
+     *
+     * @param string $status
+     * @param string $info
+     */
     private function output($status, $info)
     {
         if ($status == 'success') {
@@ -137,6 +169,12 @@ class GitlabCiCommand extends Command
         }
     }
 
+    /**
+     * Get current branch
+     *
+     * @throws \Exception
+     * @return string
+     */
     private function getCurrentBranch()
     {
         if (! is_file('.git/HEAD')) {
@@ -178,6 +216,19 @@ class GitlabCiCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 'Show pipeline. Pipeline id.',
                 false
+            ],
+            [
+                'job',
+                'j',
+                InputOption::VALUE_OPTIONAL,
+                'Show job.',
+                false
+            ],
+            [
+                'trace',
+                't',
+                InputOption::VALUE_NONE,
+                'Show job trace.'
             ]
         ];
     }
