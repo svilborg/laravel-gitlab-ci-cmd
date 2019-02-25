@@ -130,14 +130,13 @@ class GitlabCiCommand extends Command
 
         if ($this->option('current-branch')) {
             $params = [
-                'ref' => $this->option('current-branch')
+                'ref' => $this->getCurrentBranch()
             ];
         }
 
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
-        $this->line('Pipelines');
-        $this->line('');
+        $this->title('Pipelines');
 
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
@@ -159,6 +158,8 @@ class GitlabCiCommand extends Command
         $pipelineId = $this->option('pipeline');
 
         $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
+
+        $this->title('Pipeline #' . $pipelineId . ' Jobs');
 
         foreach ($jobs as $job) {
             $status = $job['status'];
@@ -183,6 +184,7 @@ class GitlabCiCommand extends Command
 
         $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'] . ' (' . $duration . ')';
 
+        $this->title('Job #' . $jobId);
         $this->output($status, $info);
         $this->line("    " . $job['web_url']);
     }
@@ -196,6 +198,7 @@ class GitlabCiCommand extends Command
     {
         $trace = $this->client->api('jobs')->trace($this->projectId, $jobId, []);
 
+        $this->title('Job #' . $jobId . ' Trace');
         $this->info($trace);
     }
 
@@ -208,6 +211,7 @@ class GitlabCiCommand extends Command
     {
         $artifacts = $this->client->api('jobs')->artifacts($this->projectId, $jobId, []);
 
+        $this->title('Job #' . $jobId . ' Artifacts');
         // $this->info($artifacts);
     }
 
@@ -221,6 +225,18 @@ class GitlabCiCommand extends Command
         $this->client->api('jobs')->retry($this->projectId, $jobId, []);
 
         $this->info('Job # ' . $jobId . ' has been retried.');
+    }
+
+    /**
+     * Title
+     *
+     * @param string $status
+     * @param string $info
+     */
+    private function title($title)
+    {
+        $this->line($title);
+        $this->line('');
     }
 
     /**
@@ -279,9 +295,8 @@ class GitlabCiCommand extends Command
             [
                 'current-branch',
                 'c',
-                InputOption::VALUE_OPTIONAL,
-                'Show pipelines for the current git branch',
-                false
+                InputOption::VALUE_NONE,
+                'Show pipelines for the current git branch'
             ],
             [
                 'pipeline',
