@@ -28,3 +28,17 @@ Available in config/gitlab_ci.php
       -r, --retry                Retry a job.
       -h, --help                 Display this help message
 
+### Example
+
+    $ php artisan gitlab-ci -c
+    
+    Pipelines
+
+    ⏵ 690 running [master]
+    ✔ 661 success [master]
+    ✔ 640 success [master]
+    ✖ 639 failed [master]
+    ✔ 635 success [master]
+    ✔ 631 success [master]
+
+
