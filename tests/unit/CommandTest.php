@@ -2,8 +2,6 @@
 namespace Tests\Unit;
 
 use Gitlab\Client;
-use Http\Client\HttpClient;
-use Illuminate\Support\Facades\Artisan;
 use GitlabCi\ServiceProviders\GitlabCiServiceProvider;
 
 class ClassConstantStub

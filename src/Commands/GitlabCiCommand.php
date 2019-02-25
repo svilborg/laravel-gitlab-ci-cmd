@@ -56,13 +56,25 @@ class GitlabCiCommand extends Command
     {
         $this->config = $config;
 
-        $url = $this->config->get('gitlab-ci')['url'];
-        $token = $this->config->get('gitlab-ci')['token'];
+        parent::__construct();
+    }
+
+    /**
+     * Intialize client
+     *
+     * @throws \Exception
+     */
+    public function init()
+    {
+        if (! $this->config->get('gitlab_ci')) {
+            throw new \Exception('Missing configuration file gitlab_ci');
+        }
+
+        $url = $this->config->get('gitlab_ci')['url'];
+        $token = $this->config->get('gitlab_ci')['token'];
 
         $this->client = Client::create($url)->authenticate($token, Client::AUTH_URL_TOKEN);
-        $this->projectId = $this->config->get('gitlab-ci')['project_id'];
-
-        parent::__construct();
+        $this->projectId = $this->config->get('gitlab_ci')['project_id'];
     }
 
     /**
@@ -73,6 +85,7 @@ class GitlabCiCommand extends Command
     public function handle()
     {
         // $this->getOutput()->setDecorated(true);
+        $this->init();
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
@@ -123,6 +136,9 @@ class GitlabCiCommand extends Command
 
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
+        $this->line('Pipelines');
+        $this->line('');
+
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
             $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . ']';
@@ -168,7 +184,7 @@ class GitlabCiCommand extends Command
         $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'] . ' (' . $duration . ')';
 
         $this->output($status, $info);
-        $this->line("\n    " . $job['web_url']);
+        $this->line("    " . $job['web_url']);
     }
 
     /**
@@ -204,7 +220,7 @@ class GitlabCiCommand extends Command
     {
         $this->client->api('jobs')->retry($this->projectId, $jobId, []);
 
-        $this->info('Job ' . $jobId . ' has been retried.');
+        $this->info('Job # ' . $jobId . ' has been retried.');
     }
 
     /**
@@ -216,13 +232,13 @@ class GitlabCiCommand extends Command
     private function output($status, $info)
     {
         if ($status == 'success') {
-            $this->info($info);
+            $this->info('✔ ' . $info);
         } elseif ($status == 'running' || $status == 'pending') {
-            $this->warn($info);
+            $this->warn('⏵ ' . $info);
         } elseif ($status == 'manual' || $status == 'skipped' || $status == 'created' || $status == 'canceled') {
-            $this->line($info);
+            $this->line('⏸ ' . $info);
         } else {
-            $this->error($info);
+            $this->error('✖ ' . $info);
         }
     }
 

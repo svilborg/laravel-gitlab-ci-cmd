@@ -3,7 +3,11 @@
   "description": "Laravel Gitlab CI Command",
   "keywords": [
     "framework",
-    "laravel"
+    "laravel",
+    "gitlab",
+    "gitlab-ci",
+    "pipelines",
+    "jobs"
   ],
   "license": "MIT",
   "type": "project",
@@ -16,16 +20,16 @@
         "phpunit/phpunit": "^7.0",
         "barryvdh/laravel-ide-helper": "^2.5",
         "mockery/mockery": "0.9.*",
-         "orchestra/testbench": "~3.0"
-    },
+        "orchestra/testbench": "~3.0"
+  },
   "autoload": {
     "psr-4": {
       "GitlabCi\\": "src"
     }
   },
   "autoload-dev": {
-        "psr-4": {
-            "Tests\\": "tests/"
-        }
+     "psr-4": {
+         "Tests\\": "tests/"
+     }
   }
 }

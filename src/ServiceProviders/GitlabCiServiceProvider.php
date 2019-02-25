@@ -35,7 +35,7 @@ class GitlabCiServiceProvider extends ServiceProvider
             $source => config_path('gitlab_ci.php')
         ]);
 
-        $this->mergeConfigFrom($source, 'gitlab-ci');
+        $this->mergeConfigFrom($source, 'gitlab_ci');
     }
 
     /**

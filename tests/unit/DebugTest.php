@@ -23,14 +23,14 @@ class DebugTest extends \Orchestra\Testbench\TestCase
     {
         $this->mockConsoleOutput = false;
 
-        $cmd = $this->artisan('gitlab-ci', [ // '--pipeline' => '98575'
-                                              // '--pipeline' => '98555'
-                                              // '--pipeline' => '98340',
-                                              // '--job' => '755369'
-                                              // '-r'=>'',
-                                              // '-t'=>'',
-                                              // '-a'=>'x',
-                                              // '--help'=>'',
+        $this->artisan('gitlab-ci', [ // '--pipeline' => '98575'
+                                       // '--pipeline' => '98555'
+                                       // '--pipeline' => '98340',
+                                       // '--job' => '755369'
+                                       // '-r'=>'',
+                                       // '-t'=>'',
+                                       // '-a'=>'x',
+                                       // '--help'=>'',
         ]);
 
         $resultAsText = Artisan::output();
