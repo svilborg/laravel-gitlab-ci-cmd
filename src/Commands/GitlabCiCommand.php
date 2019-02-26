@@ -140,7 +140,9 @@ class GitlabCiCommand extends Command
 
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
-            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . ']';
+            $sha = substr($pipeline['sha'], 0, 7);
+
+            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] ('.$sha.')';
 
             $this->output($status, $info);
         }
