@@ -212,7 +212,40 @@ class GitlabCiCommand extends Command
         $artifacts = $this->client->api('jobs')->artifacts($this->projectId, $jobId, []);
 
         $this->title('Job #' . $jobId . ' Artifacts');
-        // $this->info($artifacts);
+
+        $this->downloadJobArtifact($jobId, $artifacts);
+    }
+
+    private function downloadJobArtifact($jobId, \GuzzleHttp\Psr7\Stream $artifacts)
+    {
+        $buffer = '';
+        while (! $artifacts->eof()) {
+            $buf = $artifacts->read(1048576);
+            // Using a loose equality here to match on '' and false.
+            if ($buf == null) {
+                break;
+            }
+            $buffer .= $buf;
+        }
+
+        $path = '/tmp/';
+
+        $archive = realpath($path . 'job_' . $jobId . '.zip');
+
+        file_put_contents($archive, $buffer);
+
+        $this->info('Downloaded to ' . $archive);
+
+        $unzippedPath = $path . 'job_' . $jobId;
+
+        $zip = new \ZipArchive();
+        $res = $zip->open($archive);
+        if ($res === TRUE) {
+            // extract it to the path we determined above
+            $zip->extractTo($unzippedPath);
+            $zip->close();
+            $this->info('Extracted to ' . $unzippedPath);
+        }
     }
 
     /**
