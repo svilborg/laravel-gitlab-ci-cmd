@@ -10,7 +10,7 @@ Available in config/gitlab_ci.php
     token       - Gitlab User's Token
     project_id  - Project id
 
-### Usage 
+### Usage
 
     Description:
       Gitlab CI Intregration.
@@ -28,10 +28,12 @@ Available in config/gitlab_ci.php
       -r, --retry                Retry a job.
       -h, --help                 Display this help message
 
-### Example
+### Examples
+
+Listing Pipelines
 
     $ php artisan gitlab-ci -c
-    
+
     Pipelines
 
     ⏵ 690 running [master]
@@ -40,5 +42,19 @@ Available in config/gitlab_ci.php
     ✖ 639 failed [master]
     ✔ 635 success [master]
     ✔ 631 success [master]
+
+Pipeline's Jobs
+
+    $ artisan gitlab-ci -p 98965
+
+    Pipeline #865 Jobs
+
+    ✔ 799 success [build] builder
+    ✔ 800 success [unit_tests] UnitTests
+    ✖ 801 failed [acceptance_tests] AcceptanceTests
+        ⏸ 802 manual [code_coverage] CodeCoverage
+
+
+
 
 
