@@ -89,30 +89,23 @@ class GitlabCiCommand extends Command
 
         if ($this->option('pipeline')) {
             $this->listPipelineJobs();
-        } elseif ($this->option('trace') !== false) {
-
-            if (! $this->option('job')) {
-                throw new InvalidArgumentException('Missing job option.');
-            }
-
-            $this->getJobTrace($this->option('job'));
-        } elseif ($this->option('artifacts') !== false) {
-            if (! $this->option('job')) {
-                throw new InvalidArgumentException('Missing job option.');
-            }
-
-            $this->getJobArtifacts($this->option('job'));
-        } elseif ($this->option('retry') !== false) {
-            if (! $this->option('job')) {
-                throw new InvalidArgumentException('Missing job option.');
-            }
-
-            $this->retryJob($this->option('job'));
         } elseif ($this->option('job')) {
-            $this->getJob($this->option('job'));
+
+            if ($this->option('artifacts') !== false) {
+                $this->getJobArtifacts($this->option('job'));
+            } elseif ($this->option('retry') !== false) {
+                $this->retryJob($this->option('job'));
+            } elseif ($this->option('trace') !== false) {
+                $this->getJobTrace($this->option('job'));
+            } else {
+                $this->getJob($this->option('job'));
+            }
+
         } else {
             $this->listPipelines();
         }
+
+        $this->line('');
     }
 
     /**
@@ -142,7 +135,7 @@ class GitlabCiCommand extends Command
             $status = $pipeline['status'];
             $sha = substr($pipeline['sha'], 0, 7);
 
-            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] ('.$sha.')';
+            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] (' . $sha . ')';
 
             $this->output($status, $info);
         }
@@ -196,7 +189,7 @@ class GitlabCiCommand extends Command
      *
      * @param integer $jobId
      */
-    protected function getJobTrace($jobId)
+    protected function getJobTrace(int $jobId)
     {
         $trace = $this->client->api('jobs')->trace($this->projectId, $jobId, []);
 
@@ -209,7 +202,7 @@ class GitlabCiCommand extends Command
      *
      * @param integer $jobId
      */
-    protected function getJobArtifacts($jobId)
+    protected function getJobArtifacts(int $jobId)
     {
         $artifacts = $this->client->api('jobs')->artifacts($this->projectId, $jobId, []);
 
@@ -218,7 +211,13 @@ class GitlabCiCommand extends Command
         $this->downloadJobArtifact($jobId, $artifacts);
     }
 
-    private function downloadJobArtifact($jobId, \GuzzleHttp\Psr7\Stream $artifacts)
+    /**
+     * Dowload and unzip Artifacts
+     *
+     * @param integer $jobId
+     * @param \GuzzleHttp\Psr7\Stream $artifacts
+     */
+    private function downloadJobArtifact(int $jobId, \GuzzleHttp\Psr7\Stream $artifacts)
     {
         $buffer = '';
         while (! $artifacts->eof()) {
@@ -232,7 +231,7 @@ class GitlabCiCommand extends Command
 
         $path = '/tmp/';
 
-        $archive = realpath($path . 'job_' . $jobId . '.zip');
+        $archive = $path . 'job_' . $jobId . '.zip';
 
         file_put_contents($archive, $buffer);
 
@@ -242,10 +241,12 @@ class GitlabCiCommand extends Command
 
         $zip = new \ZipArchive();
         $res = $zip->open($archive);
+
         if ($res === TRUE) {
             // extract it to the path we determined above
             $zip->extractTo($unzippedPath);
             $zip->close();
+
             $this->info('Extracted to ' . $unzippedPath);
         }
     }
@@ -270,6 +271,7 @@ class GitlabCiCommand extends Command
      */
     private function title($title)
     {
+        $this->line('');
         $this->line($title);
         $this->line('');
     }
