@@ -52,7 +52,7 @@ Pipeline's Jobs
     ✔ 799 success [build] builder
     ✔ 800 success [unit_tests] UnitTests
     ✖ 801 failed [acceptance_tests] AcceptanceTests
-        ⏸ 802 manual [code_coverage] CodeCoverage
+    ⏸ 802 manual [code_coverage] CodeCoverage
 
 
 
