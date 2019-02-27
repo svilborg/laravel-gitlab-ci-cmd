@@ -1,7 +1,6 @@
 <?php
 namespace GitlabCi\Commands;
 
-use InvalidArgumentException;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as Config;
 use Symfony\Component\Console\Input\InputOption;
@@ -88,7 +87,9 @@ class GitlabCiCommand extends Command
         $this->init();
 
         if ($this->option('pipeline')) {
-            $this->listPipelineJobs();
+            $retryFailed = ($this->option('retry') !== false) ? true : false;
+
+            $this->listPipelineJobs($retryFailed);
         } elseif ($this->option('job')) {
 
             if ($this->option('artifacts') !== false) {
@@ -100,7 +101,6 @@ class GitlabCiCommand extends Command
             } else {
                 $this->getJob($this->option('job'));
             }
-
         } else {
             $this->listPipelines();
         }
@@ -143,14 +143,26 @@ class GitlabCiCommand extends Command
 
     /**
      * Get Pipline's Jobs
+     *
+     * @param bool $retryFailed
      */
-    protected function listPipelineJobs()
+    protected function listPipelineJobs(bool $retryFailed = false)
     {
         $params = [
             'per_page' => 100
         ];
 
         $pipelineId = $this->option('pipeline');
+
+        if ($retryFailed) {
+            $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
+
+            foreach ($jobs as $job) {
+                if ($job['status'] == 'failed') {
+                    $this->retryJob($job['id']);
+                }
+            }
+        }
 
         $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
 
@@ -260,7 +272,7 @@ class GitlabCiCommand extends Command
     {
         $this->client->api('jobs')->retry($this->projectId, $jobId, []);
 
-        $this->info('Job # ' . $jobId . ' has been retried.');
+        $this->warn('Job # ' . $jobId . ' has been retried.');
     }
 
     /**
