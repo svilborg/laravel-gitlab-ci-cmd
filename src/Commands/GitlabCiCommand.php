@@ -87,9 +87,14 @@ class GitlabCiCommand extends Command
         $this->init();
 
         if ($this->option('pipeline')) {
+            $pipelineId = (int) $this->option('pipeline');
             $retryFailed = ($this->option('retry') !== false) ? true : false;
 
-            $this->listPipelineJobs($retryFailed);
+            if ($this->option('stop') !== false) {
+                $this->stopPipeline($pipelineId);
+            } else {
+                $this->listPipelineJobs($pipelineId, $retryFailed);
+            }
         } elseif ($this->option('job')) {
 
             if ($this->option('artifacts') !== false) {
@@ -144,15 +149,14 @@ class GitlabCiCommand extends Command
     /**
      * Get Pipline's Jobs
      *
+     * @param string $pipelineId
      * @param bool $retryFailed
      */
-    protected function listPipelineJobs(bool $retryFailed = false)
+    protected function listPipelineJobs(int $pipelineId, bool $retryFailed = false)
     {
         $params = [
             'per_page' => 100
         ];
-
-        $pipelineId = $this->option('pipeline');
 
         if ($retryFailed) {
             $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
@@ -177,6 +181,18 @@ class GitlabCiCommand extends Command
 
             $this->output($status, $info);
         }
+    }
+
+    /**
+     * Stop Pipeline
+     *
+     * @param int $pipelineId
+     */
+    protected function stopPipeline(int $pipelineId)
+    {
+        $this->client->api('projects')->cancelPipeline($this->projectId, $pipelineId, []);
+
+        $this->warn('Pipeline #' . $pipelineId . ' Stopped');
     }
 
     /**
@@ -397,6 +413,12 @@ class GitlabCiCommand extends Command
                 'r',
                 InputOption::VALUE_NONE,
                 'Retry a job.'
+            ],
+            [
+                'stop',
+                's',
+                InputOption::VALUE_NONE,
+                'Stop/Cancel a pipeline.'
             ]
         ];
     }
