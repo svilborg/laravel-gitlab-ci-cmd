@@ -157,7 +157,9 @@ class GitlabCiCommand extends Command
         if ($retryFailed) {
             $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
 
-            foreach ($jobs as $job) {
+            $jobsLastStatus = $this->jobsLastStatus($jobs);
+
+            foreach ($jobsLastStatus as $job) {
                 if ($job['status'] == 'failed') {
                     $this->retryJob($job['id']);
                 }
@@ -324,6 +326,23 @@ class GitlabCiCommand extends Command
         $parts = explode("/", $head[0], 3);
 
         return trim($parts[2]);
+    }
+
+    /**
+     *
+     * @param array $jobs
+     */
+    private function jobsLastStatus($jobs)
+    {
+        $jobsLastStatus = [];
+        foreach ($jobs as $job) {
+            $jobsLastStatus[$job['name']] = [
+                'id' => $job['id'],
+                'status' => $job['status']
+            ];
+        }
+
+        return $jobsLastStatus;
     }
 
     /**
