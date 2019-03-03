@@ -140,10 +140,32 @@ class GitlabCiCommand extends Command
             $status = $pipeline['status'];
             $sha = substr($pipeline['sha'], 0, 7);
 
-            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] (' . $sha . ')';
+            $verboseInfo = '';
+            if ($this->output->isVerbose()) {
+                $commit = $this->getCommit($pipeline['sha']);
+
+                if ($commit) {
+                    $verboseInfo = " \n ";
+                    $verboseInfo .= $commit['author_name'] . ' [' . $commit['title'] . ']';
+                    $verboseInfo .= " \n ";
+                }
+            }
+
+            $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] (' . $sha . ') ' . $verboseInfo;
 
             $this->output($status, $info);
         }
+    }
+
+    /**
+     * Get Commit Info
+     *
+     * @param string $sha
+     * @return array
+     */
+    protected function getCommit(string $sha)
+    {
+        return $this->client->api('repositories')->commit($this->projectId, $sha);
     }
 
     /**
