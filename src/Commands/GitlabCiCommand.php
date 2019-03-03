@@ -83,7 +83,6 @@ class GitlabCiCommand extends Command
      */
     public function handle()
     {
-        // $this->getOutput()->setDecorated(true);
         $this->init();
 
         if ($this->option('pipeline')) {
@@ -107,34 +106,35 @@ class GitlabCiCommand extends Command
                 $this->getJob($this->option('job'));
             }
         } else {
-            $this->listPipelines();
+            $this->listPipelines($this->option('limit'));
         }
 
         $this->line('');
     }
 
     /**
+     *
      * List recient Pipelines
+     *
+     * @param int $perPage
      */
-    protected function listPipelines()
+    protected function listPipelines(int $perPage = 10)
     {
-        $params = [];
+        $params = [
+            'per_page' => $perPage
+        ];
 
         if ($this->option('branch')) {
-            $params = [
-                'ref' => $this->option('branch')
-            ];
+            $params['ref'] = $this->option('branch');
         }
 
         if ($this->option('current-branch')) {
-            $params = [
-                'ref' => $this->getCurrentBranch()
-            ];
+            $params['ref'] = $this->getCurrentBranch();
         }
 
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
-        $this->title('Pipelines');
+        $this->title('Pipelines '. count($pipelines));
 
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
@@ -395,6 +395,13 @@ class GitlabCiCommand extends Command
                 InputOption::VALUE_OPTIONAL,
                 'Show job.',
                 false
+            ],
+            [
+                'limit',
+                'l',
+                InputOption::VALUE_OPTIONAL,
+                'Per page limit for pipelines.',
+                15
             ],
             [
                 'trace',
