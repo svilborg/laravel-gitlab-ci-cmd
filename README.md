@@ -23,6 +23,7 @@ Available in config/gitlab_ci.php
       -c, --current-branch       Show pipelines for the current git branch
       -p, --pipeline[=PIPELINE]  Show pipeline's jobs. Pipeline id. [default: false]
       -j, --job[=JOB]            Show job. [default: false]
+      -l, --limit[=LIMIT]        Per page limit for pipelines. [default: 15]
       -t, --trace                Show job trace.
       -a, --artifacts            Show job's artifacts.
       -r, --retry                Retry a job.
@@ -46,14 +47,16 @@ Listing Pipelines
 
 Pipeline's Jobs
 
-    $ artisan gitlab-ci -p 98965
+    $ artisan gitlab-ci -p 701
 
     Pipeline #865 Jobs
 
-    ✔ 799 success [build] builder
+    ✔ 799 success [build] Build
     ✔ 800 success [unit_tests] UnitTests
     ✖ 801 failed [acceptance_tests] AcceptanceTests
-    ⏸ 802 manual [code_coverage] CodeCoverage
+    ⏹ 803 canceled [functional_tests] FunctionalTests
+    ⚙ 804 manual [code_coverage] CodeCoverage
+
 
 
 

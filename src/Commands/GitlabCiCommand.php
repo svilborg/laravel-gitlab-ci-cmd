@@ -134,7 +134,7 @@ class GitlabCiCommand extends Command
 
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
-        $this->title('Pipelines '. count($pipelines));
+        $this->title('Pipelines ' . count($pipelines));
 
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
@@ -318,7 +318,11 @@ class GitlabCiCommand extends Command
             $this->info('✔ ' . $info);
         } elseif ($status == 'running' || $status == 'pending') {
             $this->warn('⏵ ' . $info);
-        } elseif ($status == 'manual' || $status == 'skipped' || $status == 'created' || $status == 'canceled') {
+        } elseif ($status == 'canceled') {
+            $this->warn('⏹ ' . $info);
+        } elseif ($status == 'manual') {
+            $this->line('⚙ ' . $info);
+        } elseif ($status == 'skipped' || $status == 'created' || $status == 'pending') {
             $this->line('⏸ ' . $info);
         } else {
             $this->error('✖ ' . $info);
