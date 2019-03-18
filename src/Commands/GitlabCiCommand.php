@@ -136,6 +136,7 @@ class GitlabCiCommand extends Command
 
         $this->title('Pipelines ' . count($pipelines));
 
+        $outputs = [];
         foreach ($pipelines as $pipeline) {
             $status = $pipeline['status'];
             $sha = substr($pipeline['sha'], 0, 7);
@@ -153,7 +154,14 @@ class GitlabCiCommand extends Command
 
             $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] (' . $sha . ') ' . $verboseInfo;
 
-            $this->output($status, $info);
+            $outputs[] = [
+                'status' => $status,
+                'info' => $info
+            ];
+        }
+
+        foreach ($outputs as $output) {
+            $this->output($output['status'], $output['info']);
         }
     }
 
