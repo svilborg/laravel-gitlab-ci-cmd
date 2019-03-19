@@ -198,17 +198,20 @@ class GitlabCiCommand extends Command
             $total += count($jobs);
 
             foreach ($jobs as $job) {
+
+                $duration = (int) ($job['duration'] ?? 0);
+
                 if (! isset($stats[$job['status']])) {
                     $stats[$job['status']] = [
                         'count' => 1,
-                        'duration' => $job['duration'] ?? 0
+                        'duration' => $duration
                     ];
                 } else {
                     $stats[$job['status']]['count'] ++;
-                    $stats[$job['status']]['duration'] += $job['duration'] ?? 0;
+                    $stats[$job['status']]['duration'] += $duration;
                 }
 
-                $totalDuration += $job['duration'];
+                $totalDuration += $duration;
             }
         }
 
@@ -219,7 +222,6 @@ class GitlabCiCommand extends Command
             $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
             $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
 
-
             $itemInfo = $status;
             $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
             $itemInfo .= " \n    " . $duration . ' (' . $percentageDuration . ' %)';
@@ -229,7 +231,8 @@ class GitlabCiCommand extends Command
 
         $this->line('');
         $this->line('Total ' . $total);
-        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)->diffForHumans(null, true));
+        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)
+            ->diffForHumans(null, true));
     }
 
     /**
@@ -278,7 +281,16 @@ class GitlabCiCommand extends Command
         foreach ($jobs as $job) {
             $status = $job['status'];
 
-            $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'];
+            $verboseInfo = '';
+            if ($this->output->isVerbose()) {
+                $duration = Carbon::now()->subSeconds($job['duration'])->diffForHumans(null, true);
+                $runner = ($job['runner'] ? $job['runner']['description'] : 'N/A');
+
+                $verboseInfo .= $this->getVeboseInfo('Duration : ' . $duration);
+                $verboseInfo .= $this->getVeboseInfo('Runner : ' . $runner);
+            }
+
+            $info = $job['id'] . ' ' . $job['status'] . ' [' . $job['stage'] . '] ' . $job['name'] . $verboseInfo;
 
             $this->output($status, $info);
         }
@@ -475,10 +487,21 @@ class GitlabCiCommand extends Command
         $commit = $this->getCommit($sha);
 
         if ($commit) {
-            $info = "\n";
-            $info .= '  ' . $commit['author_name'] . ' [' . $commit['title'] . ']';
-            $info .= "\n";
+            return $this->getVeboseInfo($commit['author_name'] . ' [' . $commit['title'] . ']');
         }
+
+        return '';
+    }
+
+    /**
+     *
+     * @param string $sha
+     */
+    private function getVeboseInfo(string $text = '')
+    {
+        $info = "\n";
+        $info .= '  ' . $text;
+        $info .= "\n";
 
         return $info;
     }
