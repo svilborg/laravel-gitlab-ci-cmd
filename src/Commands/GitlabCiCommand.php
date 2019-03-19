@@ -187,6 +187,7 @@ class GitlabCiCommand extends Command
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
         $stats = [];
+        $statsRunners = [];
         $total = 0;
         $totalDuration = 0;
 
@@ -198,8 +199,8 @@ class GitlabCiCommand extends Command
             $total += count($jobs);
 
             foreach ($jobs as $job) {
-
                 $duration = (int) ($job['duration'] ?? 0);
+                $runner = ($job['runner'] ? $job['runner']['description'] : 'N/A');
 
                 if (! isset($stats[$job['status']])) {
                     $stats[$job['status']] = [
@@ -211,11 +212,24 @@ class GitlabCiCommand extends Command
                     $stats[$job['status']]['duration'] += $duration;
                 }
 
+                if (! isset($statsRunners[$runner])) {
+                    $statsRunners[$runner] = [
+                        'count' => 1,
+                        'duration' => $duration
+                    ];
+                } else {
+                    $statsRunners[$runner]['count'] ++;
+                    $statsRunners[$runner]['duration'] += $duration;
+                }
+
                 $totalDuration += $duration;
             }
         }
 
-        $this->title('Statistics');
+        $this->line('');
+        $this->line('------------------------------------ ');
+        $this->line('Job Statistics');
+        $this->line('------------------------------------ ');
 
         foreach ($stats as $status => $item) {
             $percentage = round((($item['count'] / $total) * 100), 2);
@@ -230,6 +244,34 @@ class GitlabCiCommand extends Command
         }
 
         $this->line('');
+        $this->line('------------------------------------ ');
+        $this->line('Total ' . $total);
+        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)
+            ->diffForHumans(null, true));
+
+        $this->line('');
+        $this->line('------------------------------------ ');
+        $this->line('Runner Statistics');
+        $this->line('------------------------------------ ');
+
+        // $totalRunners = count($statsRunners);
+
+        ksort($statsRunners);
+
+        foreach ($statsRunners as $runner => $item) {
+            $percentage = round((($item['count'] / $total) * 100), 2);
+            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
+            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+
+            $itemInfo = '';
+            $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
+            $itemInfo .= " \n    " . $duration . ' (' . $percentageDuration . ' %)';
+
+            $this->line($runner . '  ' . $itemInfo);
+        }
+
+        $this->line('');
+        $this->line('------------------------------------ ');
         $this->line('Total ' . $total);
         $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)
             ->diffForHumans(null, true));
