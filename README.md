@@ -28,6 +28,7 @@ Available in config/gitlab_ci.php
       -a, --artifacts            Show job's artifacts.
       -r, --retry                Retry a job.
       -s, --stop                 Stop/Cancel a pipeline.
+      -x, --stats                Statistics
       -h, --help                 Display this help message
 
 ### Examples

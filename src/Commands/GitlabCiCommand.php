@@ -5,6 +5,7 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as Config;
 use Symfony\Component\Console\Input\InputOption;
 use Gitlab\Client;
+use Carbon\Carbon;
 
 /**
  * Gitlab CI
@@ -216,17 +217,19 @@ class GitlabCiCommand extends Command
         foreach ($stats as $status => $item) {
             $percentage = round((($item['count'] / $total) * 100), 2);
             $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
+            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+
 
             $itemInfo = $status;
             $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
-            $itemInfo .= " \n    " . $item['duration'] . ' (' . $percentageDuration . ' %)';
+            $itemInfo .= " \n    " . $duration . ' (' . $percentageDuration . ' %)';
 
             $this->output($status, $itemInfo);
         }
 
         $this->line('');
         $this->line('Total ' . $total);
-        $this->line('Total Duration ' . $totalDuration);
+        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)->diffForHumans(null, true));
     }
 
     /**
