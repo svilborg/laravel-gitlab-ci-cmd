@@ -143,13 +143,7 @@ class GitlabCiCommand extends Command
 
             $verboseInfo = '';
             if ($this->output->isVerbose()) {
-                $commit = $this->getCommit($pipeline['sha']);
-
-                if ($commit) {
-                    $verboseInfo = " \n ";
-                    $verboseInfo .= $commit['author_name'] . ' [' . $commit['title'] . ']';
-                    $verboseInfo .= " \n ";
-                }
+                $verboseInfo .= $this->gitCommitInfo($pipeline['sha']);
             }
 
             $info = $pipeline['id'] . ' ' . $pipeline['status'] . ' [' . $pipeline['ref'] . '] (' . $sha . ') ' . $verboseInfo;
@@ -200,9 +194,13 @@ class GitlabCiCommand extends Command
             }
         }
 
+        $pipeline = $this->client->api('projects')->pipeline($this->projectId, $pipelineId);
         $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipelineId, $params);
 
-        $this->title('Pipeline #' . $pipelineId . ' Jobs');
+        $commitInfo = $this->gitCommitInfo($pipeline['sha']);
+
+        $this->title('Pipeline #' . $pipelineId);
+        $this->output($pipeline['status'], 'Status : '. $pipeline['status']  . $commitInfo);
 
         foreach ($jobs as $job) {
             $status = $job['status'];
@@ -393,6 +391,23 @@ class GitlabCiCommand extends Command
         }
 
         return $jobsLastStatus;
+    }
+
+    /**
+     *
+     * @param string $sha
+     */
+    private function gitCommitInfo($sha)
+    {
+        $commit = $this->getCommit($sha);
+
+        if ($commit) {
+            $info = "\n";
+            $info .= '  ' . $commit['author_name'] . ' [' . $commit['title'] . ']';
+            $info .= "\n";
+        }
+
+        return $info;
     }
 
     /**
