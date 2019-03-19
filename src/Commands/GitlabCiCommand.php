@@ -85,8 +85,10 @@ class GitlabCiCommand extends Command
     {
         $this->init();
 
-        if ($this->option('pipeline')) {
-            $pipelineId = (int) $this->option('pipeline');
+        $jobId = $this->option('job');
+        $pipelineId = (int) $this->option('pipeline');
+
+        if ($pipelineId) {
             $retryFailed = ($this->option('retry') !== false) ? true : false;
 
             if ($this->option('stop') !== false) {
@@ -94,16 +96,16 @@ class GitlabCiCommand extends Command
             } else {
                 $this->listPipelineJobs($pipelineId, $retryFailed);
             }
-        } elseif ($this->option('job')) {
+        } elseif ($jobId) {
 
             if ($this->option('artifacts') !== false) {
-                $this->getJobArtifacts($this->option('job'));
+                $this->getJobArtifacts($jobId);
             } elseif ($this->option('retry') !== false) {
-                $this->retryJob($this->option('job'));
+                $this->retryJob($jobId);
             } elseif ($this->option('trace') !== false) {
-                $this->getJobTrace($this->option('job'));
+                $this->getJobTrace($jobId);
             } else {
-                $this->getJob($this->option('job'));
+                $this->getJob($jobId);
             }
         } else {
             $this->listPipelines($this->option('limit'));
@@ -200,7 +202,7 @@ class GitlabCiCommand extends Command
         $commitInfo = $this->gitCommitInfo($pipeline['sha']);
 
         $this->title('Pipeline #' . $pipelineId);
-        $this->output($pipeline['status'], 'Status : '. $pipeline['status']  . $commitInfo);
+        $this->output($pipeline['status'], 'Status : ' . $pipeline['status'] . $commitInfo);
 
         foreach ($jobs as $job) {
             $status = $job['status'];
