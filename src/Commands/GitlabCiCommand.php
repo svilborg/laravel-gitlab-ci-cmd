@@ -107,6 +107,8 @@ class GitlabCiCommand extends Command
             } else {
                 $this->getJob($jobId);
             }
+        } elseif ($this->option('stats')) {
+            $this->listPipelinesStats($this->option('limit'));
         } else {
             $this->listPipelines($this->option('limit'));
         }
@@ -159,6 +161,72 @@ class GitlabCiCommand extends Command
         foreach ($outputs as $output) {
             $this->output($output['status'], $output['info']);
         }
+    }
+
+    /**
+     *
+     * List recient Pipelines
+     *
+     * @param int $perPage
+     */
+    protected function listPipelinesStats(int $perPage = 10)
+    {
+        $params = [
+            'per_page' => $perPage
+        ];
+
+        if ($this->option('branch')) {
+            $params['ref'] = $this->option('branch');
+        }
+
+        if ($this->option('current-branch')) {
+            $params['ref'] = $this->getCurrentBranch();
+        }
+
+        $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
+
+        $stats = [];
+        $total = 0;
+        $totalDuration = 0;
+
+        foreach ($pipelines as $pipeline) {
+            $jobs = $this->client->api('jobs')->pipelineJobs($this->projectId, $pipeline['id'], [
+                'per_page' => 100
+            ]);
+
+            $total += count($jobs);
+
+            foreach ($jobs as $job) {
+                if (! isset($stats[$job['status']])) {
+                    $stats[$job['status']] = [
+                        'count' => 1,
+                        'duration' => $job['duration'] ?? 0
+                    ];
+                } else {
+                    $stats[$job['status']]['count'] ++;
+                    $stats[$job['status']]['duration'] += $job['duration'] ?? 0;
+                }
+
+                $totalDuration += $job['duration'];
+            }
+        }
+
+        $this->title('Statistics');
+
+        foreach ($stats as $status => $item) {
+            $percentage = round((($item['count'] / $total) * 100), 2);
+            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
+
+            $itemInfo = $status;
+            $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
+            $itemInfo .= " \n    " . $item['duration'] . ' (' . $percentageDuration . ' %)';
+
+            $this->output($status, $itemInfo);
+        }
+
+        $this->line('');
+        $this->line('Total ' . $total);
+        $this->line('Total Duration ' . $totalDuration);
     }
 
     /**
@@ -477,6 +545,12 @@ class GitlabCiCommand extends Command
                 's',
                 InputOption::VALUE_NONE,
                 'Stop/Cancel a pipeline.'
+            ],
+            [
+                'stats',
+                'x',
+                InputOption::VALUE_NONE,
+                'Statistics'
             ]
         ];
     }
