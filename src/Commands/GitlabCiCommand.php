@@ -520,6 +520,7 @@ class GitlabCiCommand extends Command
         $this->line($title);
         $this->line('------------------------------------ ');
 
+        $i = 0;
         foreach ($data as $name => $item) {
             $percentage = round((($item['count'] / $total) * 100), 2);
             $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
@@ -533,8 +534,13 @@ class GitlabCiCommand extends Command
 
                 $this->output($name, $itemInfo);
             } else {
-                $this->line($itemInfo);
+                if ($i % 2 === 0) {
+                    $this->comment($itemInfo);
+                } else {
+                    $this->line($itemInfo);
+                }
             }
+            $i ++;
         }
 
         $totalDurationFormatted = Carbon::now()->subSeconds($totalDuration)->diffForHumans(null, true);
