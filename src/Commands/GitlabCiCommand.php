@@ -186,8 +186,10 @@ class GitlabCiCommand extends Command
 
         $pipelines = $this->client->api('projects')->pipelines($this->projectId, $params);
 
-        $stats = [];
-        $statsRunners = [];
+        $stats = [
+            'status' => [],
+            'runner' => []
+        ];
         $total = 0;
         $totalDuration = 0;
 
@@ -201,80 +203,26 @@ class GitlabCiCommand extends Command
             foreach ($jobs as $job) {
                 $duration = (int) ($job['duration'] ?? 0);
                 $runner = ($job['runner'] ? $job['runner']['description'] : 'N/A');
+                $status = $job['status'];
 
-                if (! isset($stats[$job['status']])) {
-                    $stats[$job['status']] = [
-                        'count' => 1,
-                        'duration' => $duration
-                    ];
-                } else {
-                    $stats[$job['status']]['count'] ++;
-                    $stats[$job['status']]['duration'] += $duration;
-                }
+                $stats['status'][$status] = [
+                    'count' => isset($stats['status'][$status]) ? $stats['status'][$status]['count'] + 1 : 1,
+                    'duration' => isset($stats['status'][$status]) ? $stats['status'][$status]['duration'] + $duration : $duration
+                ];
 
-                if (! isset($statsRunners[$runner])) {
-                    $statsRunners[$runner] = [
-                        'count' => 1,
-                        'duration' => $duration
-                    ];
-                } else {
-                    $statsRunners[$runner]['count'] ++;
-                    $statsRunners[$runner]['duration'] += $duration;
-                }
+                $stats['runner'][$runner] = [
+                    'count' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['count'] + 1 : 1,
+                    'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] : $duration
+                ];
 
                 $totalDuration += $duration;
             }
         }
 
-        $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line('Job Statistics');
-        $this->line('------------------------------------ ');
+        ksort($stats['runner']);
 
-        foreach ($stats as $status => $item) {
-            $percentage = round((($item['count'] / $total) * 100), 2);
-            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
-            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
-
-            $itemInfo = $status;
-            $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
-            $itemInfo .= " \n    " . $duration . ' (' . $percentageDuration . ' %)';
-
-            $this->output($status, $itemInfo);
-        }
-
-        $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line('Total ' . $total);
-        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)
-            ->diffForHumans(null, true));
-
-        $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line('Runner Statistics');
-        $this->line('------------------------------------ ');
-
-        // $totalRunners = count($statsRunners);
-
-        ksort($statsRunners);
-
-        foreach ($statsRunners as $runner => $item) {
-            $percentage = round((($item['count'] / $total) * 100), 2);
-            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
-            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
-
-            $itemInfo = '';
-            $itemInfo .= " \n    " . $item['count'] . ' (' . $percentage . ' %)';
-            $itemInfo .= " \n    " . $duration . ' (' . $percentageDuration . ' %)';
-
-            $this->line($runner . '  ' . $itemInfo);
-        }
-
-        $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line('Total ' . $total);
-        $this->line('Total Duration ' . Carbon::now()->subSeconds($totalDuration)
-            ->diffForHumans(null, true));
+        $this->printStatistics('Job Statistics', $stats['status'], $total, $totalDuration, true);
+        $this->printStatistics('Runner Statistics', $stats['runner'], $total, $totalDuration);
     }
 
     /**
@@ -546,6 +494,47 @@ class GitlabCiCommand extends Command
         $info .= "\n";
 
         return $info;
+    }
+
+    /**
+     * Print Statistics
+     *
+     * @param string $title
+     * @param array $data
+     * @param int $total
+     * @param int $totalDuration
+     * @param bool $formattedOutput
+     */
+    private function printStatistics(string $title, array $data, int $total, int $totalDuration, bool $formattedOutput = false)
+    {
+        $this->line('');
+        $this->line('------------------------------------ ');
+        $this->line($title);
+        $this->line('------------------------------------ ');
+
+        foreach ($data as $name => $item) {
+            $percentage = round((($item['count'] / $total) * 100), 2);
+            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
+            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+
+            $itemInfo = $name;
+            $itemInfo .= " \n " . $item['count'] . ' (' . $percentage . ' %)';
+            $itemInfo .= " \n " . $duration . ' (' . $percentageDuration . ' %)';
+
+            if ($formattedOutput) {
+
+                $this->output($name, $itemInfo);
+            } else {
+                $this->line($itemInfo);
+            }
+        }
+
+        $totalDurationFormatted = Carbon::now()->subSeconds($totalDuration)->diffForHumans(null, true);
+
+        $this->line('');
+        $this->line('------------------------------------ ');
+        $this->line('Total ' . $total);
+        $this->line('Total Duration ' . $totalDurationFormatted);
     }
 
     /**
