@@ -188,7 +188,8 @@ class GitlabCiCommand extends Command
 
         $stats = [
             'status' => [],
-            'runner' => []
+            'runner' => [],
+            'stage' => []
         ];
         $total = 0;
         $totalDuration = 0;
@@ -203,7 +204,8 @@ class GitlabCiCommand extends Command
             foreach ($jobs as $job) {
                 $duration = (int) ($job['duration'] ?? 0);
                 $runner = ($job['runner'] ? $job['runner']['description'] : 'N/A');
-                $status = $job['status'];
+                $status = $job['status'] ?? 'N/A';
+                $stage = $job['stage'] ?? 'N/A';
 
                 $stats['status'][$status] = [
                     'count' => isset($stats['status'][$status]) ? $stats['status'][$status]['count'] + 1 : 1,
@@ -215,14 +217,20 @@ class GitlabCiCommand extends Command
                     'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] : $duration
                 ];
 
+                $stats['stage'][$stage] = [
+                    'count' => isset($stats['stage'][$stage]) ? $stats['stage'][$stage]['count'] + 1 : 1,
+                    'duration' => isset($stats['stage'][$stage]) ? $stats['stage'][$stage]['duration'] : $duration
+                ];
+
                 $totalDuration += $duration;
             }
         }
 
         ksort($stats['runner']);
 
-        $this->printStatistics('Job Statistics', $stats['status'], $total, $totalDuration, true);
+        $this->printStatistics('Status Statistics', $stats['status'], $total, $totalDuration, true);
         $this->printStatistics('Runner Statistics', $stats['runner'], $total, $totalDuration);
+        $this->printStatistics('Stage Statistics', $stats['stage'], $total, $totalDuration);
     }
 
     /**
