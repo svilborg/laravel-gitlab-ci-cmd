@@ -58,6 +58,26 @@ Pipeline's Jobs
     ⏹ 803 canceled [functional_tests] FunctionalTests
     ⚙ 804 manual [code_coverage] CodeCoverage
 
+Statistics 
+
+    $ artisan gitlab-ci -x
+    
+    ------------------------------------ 
+    Status Statistics
+    ------------------------------------ 
+    ⏵ running 
+     3 (4.05 %) 
+     6 minutes (20.37 %)
+    ⏸ created 
+     50 (67.57 %) 
+     1 second (0 %)
+    ✔ success 
+     21 (28.38 %) 
+     26 minutes (79.63 %)
+    ------------------------------------ 
+    Total 74
+    Total Duration 33 minutes
+    .....
 
 
 
