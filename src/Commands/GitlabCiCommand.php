@@ -210,12 +210,14 @@ class GitlabCiCommand extends Command
 
                 $stats['status'][$status] = [
                     'count' => isset($stats['status'][$status]) ? $stats['status'][$status]['count'] + 1 : 1,
-                    'duration' => isset($stats['status'][$status]) ? $stats['status'][$status]['duration'] + $duration : $duration
+                    'duration' => isset($stats['status'][$status]) ? $stats['status'][$status]['duration'] + $duration : $duration,
+                    'status' => $status
                 ];
 
                 $stats['runner'][$runner] = [
                     'count' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['count'] + 1 : 1,
-                    'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] : $duration
+                    'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] : $duration,
+                    'count_failed' => $status
                 ];
 
                 $stats['stage'][$stage] = [
@@ -229,9 +231,9 @@ class GitlabCiCommand extends Command
 
         ksort($stats['runner']);
 
-        $this->printStatistics('Status Statistics', $stats['status'], $total, $totalDuration, true);
-        $this->printStatistics('Runner Statistics', $stats['runner'], $total, $totalDuration);
-        $this->printStatistics('Stage Statistics', $stats['stage'], $total, $totalDuration);
+        $this->printStatistics('Status', $stats['status'], $total, $totalDuration, true);
+        $this->printStatistics('Runner', $stats['runner'], $total, $totalDuration);
+        $this->printStatistics('Stage', $stats['stage'], $total, $totalDuration);
     }
 
     /**
@@ -535,19 +537,28 @@ class GitlabCiCommand extends Command
         $rows = [];
         foreach ($data as $name => $item) {
             $percentage = round((($item['count'] / $total) * 100), 2);
-            $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
-            $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+            $durationPercentage = round((($item['duration'] / $totalDuration) * 100), 2);
+            $durationTime = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+
+            $count = $item['count'] . ' (' . $percentage . ' %)';
+            $duration = $durationTime . ' (' . $durationPercentage . ' %)';
 
             if ($formattedOutput) {
-                $name = $this->formattedOutput($name, $name);
+                $status = $name;
+
+                $name = $this->formattedOutput($status, $name);
+                // $count = $this->formattedOutput($status, $count);
+                // $duration = $this->formattedOutput($status, $duration);
             } else {
                 $name = ($i % 2 === 0) ? '<comment>' . $name . '</comment>' : $name;
+                $count = ($i % 2 === 0) ? '<comment>' . $count . '</comment>' : $count;
+                $duration = ($i % 2 === 0) ? '<comment>' . $duration . '</comment>' : $duration;
             }
 
             $rows[] = [
                 $name,
-                $item['count'] . ' (' . $percentage . ' %)',
-                $duration . ' (' . $percentageDuration . ' %)'
+                $count,
+                $duration
             ];
             $i ++;
         }
