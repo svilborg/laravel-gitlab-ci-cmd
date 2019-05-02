@@ -4,6 +4,7 @@ namespace GitlabCi\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Config\Repository as Config;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Helper\TableSeparator;
 use Gitlab\Client;
 use Carbon\Carbon;
 
@@ -425,19 +426,32 @@ class GitlabCiCommand extends Command
      */
     private function output($status, $info)
     {
+        $this->line($this->formattedOutput($status, $info));
+    }
+
+    /**
+     * Output based on pipline/job status
+     *
+     * @param string $status
+     * @param string $info
+     */
+    private function formattedOutput($status, $info)
+    {
         if ($status == 'success') {
-            $this->info('✔ ' . $info);
+            $result = '<info>✔ ' . $info . '</info>';
         } elseif ($status == 'running' || $status == 'pending') {
-            $this->warn('⏵ ' . $info);
+            $result = '<comment>⏵ ' . $info . '</comment>';
         } elseif ($status == 'canceled') {
-            $this->warn('⏹ ' . $info);
+            $result = '<comment>⏹ ' . $info . '</comment>';
         } elseif ($status == 'manual') {
-            $this->line('⚙ ' . $info);
+            $result = '⚙ ' . $info;
         } elseif ($status == 'skipped' || $status == 'created' || $status == 'pending') {
-            $this->line('⏸ ' . $info);
+            $result = '⏸ ' . $info;
         } else {
-            $this->error('✖ ' . $info);
+            $result = '<error>✖ ' . $info . '</error>';
         }
+
+        return $result;
     }
 
     /**
@@ -516,39 +530,45 @@ class GitlabCiCommand extends Command
     private function printStatistics(string $title, array $data, int $total, int $totalDuration, bool $formattedOutput = false)
     {
         $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line($title);
-        $this->line('------------------------------------ ');
 
         $i = 0;
+        $rows = [];
         foreach ($data as $name => $item) {
             $percentage = round((($item['count'] / $total) * 100), 2);
             $percentageDuration = round((($item['duration'] / $totalDuration) * 100), 2);
             $duration = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
 
-            $itemInfo = $name;
-            $itemInfo .= " \n " . $item['count'] . ' (' . $percentage . ' %)';
-            $itemInfo .= " \n " . $duration . ' (' . $percentageDuration . ' %)';
-
             if ($formattedOutput) {
-
-                $this->output($name, $itemInfo);
+                $name = $this->formattedOutput($name, $name);
             } else {
-                if ($i % 2 === 0) {
-                    $this->comment($itemInfo);
-                } else {
-                    $this->line($itemInfo);
-                }
+                $name = ($i % 2 === 0) ? '<comment>' . $name . '</comment>' : $name;
             }
+
+            $rows[] = [
+                $name,
+                $item['count'] . ' (' . $percentage . ' %)',
+                $duration . ' (' . $percentageDuration . ' %)'
+            ];
             $i ++;
         }
 
+        $separator = new TableSeparator();
+
         $totalDurationFormatted = Carbon::now()->subSeconds($totalDuration)->diffForHumans(null, true);
 
-        $this->line('');
-        $this->line('------------------------------------ ');
-        $this->line('Total ' . $total);
-        $this->line('Total Duration ' . $totalDurationFormatted);
+        $rows[] = $separator;
+
+        $rows[] = [
+            ' ∑',
+            $total,
+            $totalDurationFormatted
+        ];
+
+        $this->table([
+            $title,
+            'Count (%)',
+            'Duration (%)'
+        ], $rows);
     }
 
     /**
