@@ -550,6 +550,7 @@ class GitlabCiCommand extends Command
                 $count = ($i % 2 === 0) ? '<comment>' . $count . '</comment>' : $count;
                 $countPercentage = ($i % 2 === 0) ? '<comment>' . $countPercentage . '</comment>' : $countPercentage;
                 $durationTime = ($i % 2 === 0) ? '<comment>' . $durationTime . '</comment>' : $durationTime;
+                $durationPercentage = ($i % 2 === 0) ? '<comment>' . $durationPercentage . '</comment>' : $durationPercentage;
             }
 
             $rows[] = [
@@ -578,8 +579,8 @@ class GitlabCiCommand extends Command
 
         $this->table([
             $title,
-            'Count',
-            'Count %',
+            'Jobs',
+            'Jobs %',
             'Duration',
             'Duration %'
         ], $rows);
