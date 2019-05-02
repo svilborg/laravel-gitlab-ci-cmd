@@ -216,13 +216,12 @@ class GitlabCiCommand extends Command
 
                 $stats['runner'][$runner] = [
                     'count' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['count'] + 1 : 1,
-                    'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] : $duration,
-                    'count_failed' => $status
+                    'duration' => isset($stats['runner'][$runner]) ? $stats['runner'][$runner]['duration'] + $duration : $duration
                 ];
 
                 $stats['stage'][$stage] = [
                     'count' => isset($stats['stage'][$stage]) ? $stats['stage'][$stage]['count'] + 1 : 1,
-                    'duration' => isset($stats['stage'][$stage]) ? $stats['stage'][$stage]['duration'] : $duration
+                    'duration' => isset($stats['stage'][$stage]) ? $stats['stage'][$stage]['duration'] + $duration : $duration
                 ];
 
                 $totalDuration += $duration;
@@ -231,7 +230,7 @@ class GitlabCiCommand extends Command
 
         ksort($stats['runner']);
 
-        $this->printStatistics('Status', $stats['status'], $total, $totalDuration, true);
+        $this->printStatistics('Status', $stats['status'], $total, $totalDuration);
         $this->printStatistics('Runner', $stats['runner'], $total, $totalDuration);
         $this->printStatistics('Stage', $stats['stage'], $total, $totalDuration);
     }
@@ -527,24 +526,21 @@ class GitlabCiCommand extends Command
      * @param array $data
      * @param int $total
      * @param int $totalDuration
-     * @param bool $formattedOutput
      */
-    private function printStatistics(string $title, array $data, int $total, int $totalDuration, bool $formattedOutput = false)
+    private function printStatistics(string $title, array $data, int $total, int $totalDuration)
     {
         $this->line('');
 
         $i = 0;
         $rows = [];
         foreach ($data as $name => $item) {
-            $percentage = round((($item['count'] / $total) * 100), 2);
-            $durationPercentage = round((($item['duration'] / $totalDuration) * 100), 2);
+            $count = $item['count'];
+            $countPercentage = round((($item['count'] / $total) * 100), 2) . ' %';
             $durationTime = Carbon::now()->subSeconds($item['duration'])->diffForHumans(null, true);
+            $durationPercentage = round((($item['duration'] / $totalDuration) * 100), 2) . ' %';
 
-            $count = $item['count'] . ' (' . $percentage . ' %)';
-            $duration = $durationTime . ' (' . $durationPercentage . ' %)';
-
-            if ($formattedOutput) {
-                $status = $name;
+            if (isset($item['status'])) {
+                $status = $item['status'];
 
                 $name = $this->formattedOutput($status, $name);
                 // $count = $this->formattedOutput($status, $count);
@@ -552,13 +548,16 @@ class GitlabCiCommand extends Command
             } else {
                 $name = ($i % 2 === 0) ? '<comment>' . $name . '</comment>' : $name;
                 $count = ($i % 2 === 0) ? '<comment>' . $count . '</comment>' : $count;
-                $duration = ($i % 2 === 0) ? '<comment>' . $duration . '</comment>' : $duration;
+                $countPercentage = ($i % 2 === 0) ? '<comment>' . $countPercentage . '</comment>' : $countPercentage;
+                $durationTime = ($i % 2 === 0) ? '<comment>' . $durationTime . '</comment>' : $durationTime;
             }
 
             $rows[] = [
                 $name,
                 $count,
-                $duration
+                $countPercentage,
+                $durationTime,
+                $durationPercentage
             ];
             $i ++;
         }
@@ -572,13 +571,17 @@ class GitlabCiCommand extends Command
         $rows[] = [
             ' ∑',
             $total,
-            $totalDurationFormatted
+            '',
+            $totalDurationFormatted,
+            ''
         ];
 
         $this->table([
             $title,
-            'Count (%)',
-            'Duration (%)'
+            'Count',
+            'Count %',
+            'Duration',
+            'Duration %'
         ], $rows);
     }
 
