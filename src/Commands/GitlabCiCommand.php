@@ -7,6 +7,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Helper\TableSeparator;
 use Gitlab\Client;
 use Carbon\Carbon;
+use Gitlab\Api\Jobs;
 
 /**
  * Gitlab CI
@@ -438,15 +439,15 @@ class GitlabCiCommand extends Command
      */
     private function formattedOutput($status, $info)
     {
-        if ($status == 'success') {
+        if ($status == Jobs::SCOPE_SUCCESS) {
             $result = '<info>✔ ' . $info . '</info>';
-        } elseif ($status == 'running' || $status == 'pending') {
+        } elseif ($status == Jobs::SCOPE_RUNNING) {
             $result = '<comment>⏵ ' . $info . '</comment>';
-        } elseif ($status == 'canceled') {
+        } elseif ($status == Jobs::SCOPE_CANCELED) {
             $result = '<comment>⏹ ' . $info . '</comment>';
-        } elseif ($status == 'manual') {
+        } elseif ($status == Jobs::SCOPE_MANUAL) {
             $result = '⚙ ' . $info;
-        } elseif ($status == 'skipped' || $status == 'created' || $status == 'pending') {
+        } elseif ($status == Jobs::SCOPE_SKIPPED || $status == Jobs::SCOPE_CREATED || $status == Jobs::SCOPE_PENDING) {
             $result = '⏸ ' . $info;
         } else {
             $result = '<error>✖ ' . $info . '</error>';
