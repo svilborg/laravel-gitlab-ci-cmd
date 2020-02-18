@@ -980,16 +980,16 @@
         },
         {
             "name": "m4tthumphrey/php-gitlab-api",
-            "version": "9.16.0",
+            "version": "9.17.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/m4tthumphrey/php-gitlab-api.git",
-                "reference": "b6684dcc85e465f2e39be2ccea2e708994a32a95"
+                "reference": "a4c3d1638fc35a76cc276f53773d6c74820c0f29"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/m4tthumphrey/php-gitlab-api/zipball/b6684dcc85e465f2e39be2ccea2e708994a32a95",
-                "reference": "b6684dcc85e465f2e39be2ccea2e708994a32a95",
+                "url": "https://api.github.com/repos/m4tthumphrey/php-gitlab-api/zipball/a4c3d1638fc35a76cc276f53773d6c74820c0f29",
+                "reference": "a4c3d1638fc35a76cc276f53773d6c74820c0f29",
                 "shasum": ""
             },
             "require": {
@@ -1011,7 +1011,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "9.15-dev"
+                    "dev-master": "9.16-dev"
                 }
             },
             "autoload": {
@@ -1044,7 +1044,7 @@
                 "api",
                 "gitlab"
             ],
-            "time": "2020-01-02T13:40:11+00:00"
+            "time": "2020-02-17T09:36:49+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -2918,7 +2918,7 @@
         },
         {
             "name": "symfony/options-resolver",
-            "version": "v5.0.3",
+            "version": "v5.0.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/options-resolver.git",
